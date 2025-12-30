@@ -1,0 +1,226 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  ignorenonframetext,
+]{beamer}
+\usepackage{pgfpages}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
+\setbeamertemplate{part page}{
+  \centering
+  \begin{beamercolorbox}[sep=16pt,center]{part title}
+    \usebeamerfont{part title}\insertpart\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \centering
+  \begin{beamercolorbox}[sep=12pt,center]{section title}
+    \usebeamerfont{section title}\insertsection\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{subsection page}{
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center]{subsection title}
+    \usebeamerfont{subsection title}\insertsubsection\par
+  \end{beamercolorbox}
+}
+\AtBeginPart{
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \frame{\subsectionpage}
+}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\usetheme[]{Madrid}
+\usecolortheme{dolphin}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\newif\ifbibliography
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Initial Results},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Initial Results}
+\author{Aries Eroles}
+\date{\vspace{-2.5em}June 17, 2025}
+
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{makecell}  
+
+\begin{document}
+\frame{\titlepage}
+
+\section{Skilled AFF}\label{skilled-aff}
+
+\begin{frame}{Basis of payment, by major}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{Images/PBASIS_plot.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Class of worker, by major}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{Images/PCLASS_plot.png}
+\end{figure}
+\end{frame}
+
+
+\section{Decomposition}\label{decomposition}
+
+\begin{frame}{By major group, aggregated}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{Images/shift share major.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}{At occupation level, major group 6}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/shift major 6.png}
+\end{figure}
+\vspace{0.5em}
+{\tiny \textit{Note:} 6111 -- Rice farmers; 6112 -- Corn farmers; 6113 -- Vegetable, legumes and root crops farmers; 6115 -- Coconut farmers}
+\end{frame}
+
+
+\begin{frame}{At occupation level, major group 9}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/shift major 9.png}
+\end{figure}
+\vspace{0.5em}
+{\tiny \textit{Note:} 9111 -- Domestic cleaner and helper; 9211 -- Crop farm laborers; 9313 -- Building and construction laborers; 9334 -- Shelf filers}
+\end{frame}
+
+
+\begin{frame}{At occupation level, major group 7}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/shift major 7.png}
+\end{figure}
+\vspace{0.5em}
+{\tiny \textit{Note:} 7115 -- Carperters and joiners}
+\end{frame}
+
+
+\section{Logit}\label{decomposition}
+
+
+
+
+\begin{frame}{Manual and routine, 2021}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{Images/glm_2021a2_styled_plot.png}
+\end{figure}
+\vspace{1em}
+\centering
+\[
+log\ \left[\ \frac{\ \pi\ \left(middle\_class\right)\ }{\ 1\ -\ \pi\ \left(middle\_class\right)\ }\ \right]=\alpha+\beta_1\times\mathcal{R}+\beta_2\times\mathcal{M}
+\]
+\end{frame}
+
+
+
+\begin{frame}{Manual and routine, 2021; odds ratios}
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Characteristic} & \textbf{2006} & \textbf{2009} & \textbf{2012} & \textbf{2015} & \textbf{2018} & \textbf{2021} \\
+\midrule
+Routine & 0.99 & 0.94 & 0.75$^{***}$ & 0.68$^{***}$ & 0.78$^{***}$ & 0.95$^{*}$ \\
+Manual  & 1.06 & 5.71$^{***}$ & 5.57$^{***}$ & 5.11$^{***}$ & 4.81$^{***}$ & 5.15$^{***}$ \\
+AUC     & 0.508 & 0.687 & 0.696 & 0.689 & 0.673 & 0.671 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+{\scriptsize $^{*}p<0.05$; $^{**}p<0.01$; $^{***}p<0.001$}
+\end{frame}
+
+
+\begin{frame}{d and m, 2021}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\linewidth]{Images/glm_2021a1_styled_plot.png}
+\end{figure}
+\vspace{1em}
+\centering
+\[
+\log\left[\frac{\pi(\text{middle class})}{1 - \pi(\text{middle class})}\right] = \alpha + \beta_x d_x + \gamma_y m_y
+\]
+\end{frame}
+
+
+
+\end{document}
