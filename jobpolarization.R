@@ -608,3 +608,480 @@ for (yr in names(mdata_hhmem)) {
 
 
 
+
+# FUNCTIONS: Data processing ----
+
+# Extract employed subset
+get_emp <- function(sd) {
+  # subset employed individuals
+  subset(sd, NEWEMPSTAT == 1)
+}
+
+
+# Total employed
+calc_total_emp <- function(emp) {
+  st <- svytotal(~NEWEMPSTAT, emp, na.rm = TRUE)
+  
+  data.frame(
+    variable  = names(st),
+    estimate  = as.numeric(st),
+    se        = sqrt(attr(st, "var")),
+    statistic = attr(st, "statistic"),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+calc_nat_wage <- function(emp) {
+  st <- svymean(~PBASIC, subset(emp, NEWEMPSTAT == 1), na.rm = TRUE)
+  data.frame(
+    variable = names(st),
+    estimate = as.numeric(st),
+    se       = sqrt(attr(st, "var")),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# Employment by 4-digit PSOC
+calc_job_4digit <- function(emp, total_emp_value) {
+  svyby(~NEWEMPSTAT, ~PSOC_2012, emp, svytotal, na.rm = TRUE) %>%
+    as.data.frame() %>%
+    mutate(share = NEWEMPSTAT / total_emp_value * 100)
+}
+
+
+# Dominant task employment
+calc_dt <- function(emp) {
+  df <- svyby(~NEWEMPSTAT, ~dt, emp, svytotal, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Major occupational groups employment
+calc_major_emp <- function(emp) {
+  df <- svyby(~NEWEMPSTAT, ~major_group, emp, svytotal, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Average wage by occupation (4-digit)
+calc_wage_4digit <- function(emp) {
+  df <- svyby(~PBASIC, ~PSOC_2012, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+calc_wage_ind <- function(emp) {
+  df <- svyby(~PBASIC, ~PSOC_2012 + PSIC_section, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Average wage by dominant task
+calc_dt_wage <- function(emp) {
+  df <- svyby(~PBASIC, ~dt, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Average wage by major group
+calc_major_wage <- function(emp) {
+  df <- svyby(~PBASIC, ~major_group, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+calc_ind <- function(emp) {
+  df <- svyby(~NEWEMPSTAT, ~~PSOC_2012 + PSIC_section, emp, svytotal, na.rm = TRUE)
+  as.data.frame(df) %>%
+    
+    group_by(PSIC_section) %>%
+    mutate(
+      total_by_industry = sum(NEWEMPSTAT),
+      pct = NEWEMPSTAT / total_by_industry * 100
+    ) %>%
+    ungroup()
+}
+
+
+# Employment: dominant task × industry section
+calc_dti <- function(emp) {
+  df <- svyby(~NEWEMPSTAT, ~PSIC_section + dt, emp, svytotal, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+# Employment: dominant task × income class
+calc_dt_income <- function(emp, total_emp) {
+  total_emp_value <- total_emp$estimate
+  
+  svyby(~NEWEMPSTAT, ~dt + income_class_3, emp, svytotal, na.rm = TRUE) %>%
+    as.data.frame() %>%
+    group_by(income_class_3) %>%
+    mutate(
+      total_by_income = sum(NEWEMPSTAT),
+      pct = NEWEMPSTAT / total_by_income * 100
+    ) %>%
+    ungroup() %>%
+    mutate(pct_of_total_employed = NEWEMPSTAT / total_emp_value * 100)
+}
+
+
+# Employment: dominant task × major occupation group
+calc_dt_major <- function(emp, total_emp) {
+  total_emp_value <- total_emp$estimate
+  
+  svyby(~NEWEMPSTAT, ~dt + major_group, emp, svytotal, na.rm = TRUE) %>%
+    as.data.frame() %>%
+    group_by(major_group) %>%
+    mutate(
+      total_by_group = sum(NEWEMPSTAT),
+      pct = NEWEMPSTAT / total_by_group * 100
+    ) %>%
+    ungroup() %>%
+    mutate(pct_of_total_employed = NEWEMPSTAT / total_emp_value * 100)
+}
+
+
+# Employment: major group × industry section
+calc_maj_ind <- function(emp) {
+  total_emp_value <- total_emp$estimage
+  
+  svyby(~NEWEMPSTAT, ~major_group + PSIC_section, emp, svytotal, na.rm = TRUE) %>%
+    as.data.frame() %>%
+    group_by(PSIC_section) %>%
+    mutate(
+      total_by_section = sum(NEWEMPSTAT),
+      pct = NEWEMPSTAT / total_by_section * 100
+    ) %>%
+    ungroup() %>%
+    mutate(pct_of_total_employed = NEWEMPSTAT / total_emp_value * 100)
+}
+
+
+# Average wage: dominant task × industry section
+calc_dti_wage <- function(emp) {
+  df <- svyby(~PBASIC, ~PSIC_section + dt, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Average wage: dominant task × income class
+calc_dt_income_wage <- function(emp) {
+  df <- svyby(~PBASIC, ~dt + income_class_3, emp, svymean, na.rm = TRUE)
+  as.data.frame(df)
+}
+
+
+# Create sd (survey design) subsets: Employed
+
+emp_list <- list()
+
+for (yr in years) {
+  
+  message("Processing ", yr, " ...")
+  
+  sd <- get(paste0("sd_", yr))
+  
+  emp <- subset(sd, NEWEMPSTAT == 1 & !is.na(major_group))
+  
+  emp_list[[yr]] <- emp
+  
+  rm(emp)
+  rm(sd)
+  gc()
+}
+
+
+# APPLY the functions ----
+
+
+## Total number of employed
+a_emp_total <- list()
+
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  a_emp_total[[yr]] <- calc_total_emp(emp)
+}
+
+
+a_wage_nat <- list()
+
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  a_wage_nat[[yr]] <- calc_nat_wage(emp)
+}
+
+
+## Total number of employed: By 4-digit job code
+a_emp_job_4digit <- list()
+
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  # Extract numeric total from a_emp_total data.frame
+  total_emp_value <- a_emp_total[[yr]]$estimate
+  
+  a_emp_job_4digit[[yr]] <- calc_job_4digit(emp, total_emp_value)
+}
+
+
+## Total number of employed: By dominant task categories
+a_emp_dt <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_emp_dt[[yr]] <- calc_dt(emp)
+}
+
+
+## Total number of employed: By major occupation groups
+a_emp_major <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_emp_major[[yr]] <- calc_major_emp(emp)
+}
+
+
+## Average wages: By 4-digit job codes
+a_wage_4digit <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_4digit[[yr]] <- calc_wage_4digit(emp)
+}
+
+a_wage_ind <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_ind[[yr]] <- calc_wage_ind(emp)
+}
+
+
+## Average wages: By major occupation groups
+a_wage_major <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_major[[yr]] <- calc_major_wage(emp)
+}
+
+a_emp_ind <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_emp_ind[[yr]] <- calc_ind(emp)
+}
+
+
+## Total number of employed: Dominant task × industry section
+a_emp_dti <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_emp_dti[[yr]] <- calc_dti(emp)
+}
+
+
+## Total number of employed: Dominant task × income class
+a_emp_dt_income <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  total_emp <- a_emp_total[[yr]]
+  
+  a_emp_dt_income[[yr]] <- calc_dt_income(emp, total_emp)
+}
+
+
+## Total number of employed: Major group × industry section
+a_emp_major_ind <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_emp_major_ind[[yr]] <- calc_maj_ind(emp)
+}
+
+
+## Average wages: By dominant task
+a_wage_dt <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_dt[[yr]] <- calc_dt_wage(emp)
+}
+
+
+## Total number of employed: Dominant task × major occupation group
+a_emp_dt_major <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  total_emp <- a_emp_total[[yr]]
+  
+  a_emp_dt_major[[yr]] <- calc_dt_major(emp, total_emp)
+}
+
+
+## Average wages: Dominant task × industry section
+a_wage_dti <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_dti[[yr]] <- calc_dti_wage(emp)
+}
+
+
+## Average wages: Dominant task × income class
+a_wage_dt_income <- list()
+for (yr in names(emp_list)) {
+  emp <- emp_list[[yr]]
+  
+  a_wage_dt_income[[yr]] <- calc_dt_income_wage(emp)
+}
+
+rm(emp)
+
+
+# COMBINE into single dfs ----
+
+
+df_analysis <- c(
+  "a_emp_total",         # Total number of employed per year
+  "a_emp_job_4digit",    # Total employed per 4-digit occup
+  "a_emp_dt",            # Total employed per dominant task classification
+  "a_emp_major",         # Total employed per major occupation group
+  "a_wage_4digit",
+  "a_wage_major",
+  "a_emp_dti",
+  "a_emp_dt_income",
+  "a_wage_dt",
+  "a_emp_dt_major",
+  "a_wage_dti",
+  "a_wage_dt_income",
+  "a_emp_major_ind",
+  "a_emp_ind",
+  "a_wage_ind",
+  "a_wage_nat"
+)
+
+analyses <- mget(df_analysis)
+
+
+combine_analysis <- function(df_analysis) {
+  
+  for (df_name in names(df_analysis)) {
+    
+    message("Combining: ", df_name)
+    
+    # Remove the "a_" prefix → make c_ version
+    new_name <- paste0("c_", sub("^a_", "", df_name))
+    
+    nested_list <- df_analysis[[df_name]]
+    
+    # Combine into one long df
+    combined_df <- dplyr::bind_rows(nested_list, .id = "year")
+    
+    # Ensure year is character
+    combined_df$year <- as.character(combined_df$year)
+    
+    # Remove row names
+    rownames(combined_df) <- NULL
+    
+    # Save into global environment
+    assign(new_name, combined_df, envir = .GlobalEnv)
+  }
+}
+
+
+
+
+
+
+
+# TRENDS ----
+
+
+## Total employment trends: t_emp_total
+
+t_emp_total <- c_emp_total %>%
+  select(-NEWEMPSTAT) %>%                 # remove NEWEMPSTAT column
+  arrange(as.numeric(year)) %>%           # ensure sorted by year
+  mutate(
+    perc_g = (estimate / lag(estimate) - 1) * 100,   # percent growth
+    index_g = estimate / estimate[year == "2006"] * 100
+  )
+
+
+## Total employement trends by 4-digit code: t_emp_job_4digit
+
+t_emp_job_4digit <- c_emp_job_4digit %>%
+  rename(total = NEWEMPSTAT) %>%
+  arrange(as.numeric(year)) %>%
+  group_by(PSOC_2012) %>%
+  mutate(
+    perc_g = (total / lag(total) - 1) * 100, # percent growth
+    index_g = ifelse(any(year == "2006"), total / first(total[year == "2006"]) * 100, NA), # indexed growth
+    share_g = share - lag(share)
+  ) %>%
+  ungroup()
+
+
+s_emp_job_4digit <- t_emp_job_4digit %>%
+  select(year, PSOC_2012, total, share) %>%
+  filter(year %in% c("2006", "2023")) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = c(total, share),
+    names_glue = "{.value}_{year}"
+  ) %>%
+  mutate(
+    perc_g = (total_2023 / total_2006 - 1) * 100,
+    cagr = ((total_2023 / total_2006)^(1 / (2023 - 2006)) - 1) * 100,
+    change_g_share = share_2023 - share_2006,
+  )
+
+
+## Total employement trends by dominant task: t_emp_dt
+
+t_emp_dt <- c_emp_dt %>%
+  rename(total = NEWEMPSTAT) %>%
+  group_by(year) %>%
+  mutate(
+    year_total = sum(total)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    share = (total / year_total) * 100
+  ) %>%
+  arrange(as.numeric(year)) %>%
+  group_by(dt) %>%
+  mutate(
+    perc_g = (total / lag(total) - 1) * 100,
+    index_g = total / (total[year == "2006"]) * 100,
+    share_g = share - lag(share)
+  ) %>%
+  ungroup()
+
+
+s_emp_dt <- t_emp_dt %>%
+  select(year, dt, total, share) %>%
+  filter(year %in% c("2006", "2023")) %>%
+  pivot_wider(
+    names_from = year,
+    values_from = c(total, share),
+    names_glue = "{.value}_{year}"
+  ) %>%
+  mutate(
+    perc_g = (total_2023 / total_2006 - 1) * 100,
+    cagr = ((total_2023 / total_2006)^(1 / (2023 - 2006)) - 1) * 100,
+    change_g_share = share_2023 - share_2006,
+  )
+
+
+
+
+
+
+
+
